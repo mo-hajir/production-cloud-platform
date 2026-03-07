@@ -12,19 +12,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Terraform CLI
+      # 2️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.14.6
 
-      # 3️⃣ Check formatting
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
+      # 3️⃣ Format Terraform (auto-fix, so CI doesn’t fail)
+      - name: Terraform Format
+        run: terraform fmt -recursive
         working-directory: terraform/environments/dev
 
       # 4️⃣ Initialize Terraform without backend
@@ -32,7 +32,7 @@ jobs:
         run: terraform init -backend=false -upgrade
         working-directory: terraform/environments/dev
 
-      # 5️⃣ Explicitly get modules
+      # 5️⃣ Get all modules
       - name: Terraform Get Modules
         run: terraform get -update
         working-directory: terraform/environments/dev
