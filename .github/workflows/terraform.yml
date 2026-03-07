@@ -41,3 +41,8 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
         working-directory: terraform/environments/dev
+
+      # 7️⃣ Run Terraform Plan (preview changes)
+      - name: Terraform Plan
+        run: terraform plan -no-color -out=tfplan
+        working-directory: terraform/environments/dev
