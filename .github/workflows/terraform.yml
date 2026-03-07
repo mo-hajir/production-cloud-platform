@@ -16,28 +16,28 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Install specific Terraform version
+      # 2️⃣ Setup Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.14.6
 
-      # 3️⃣ Check formatting recursively
+      # 3️⃣ Check formatting
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
         working-directory: terraform/environments/dev
 
-      # 4️⃣ Initialize Terraform without touching AWS backend
+      # 4️⃣ Initialize Terraform without backend
       - name: Terraform Init
-        run: terraform init -backend=false
+        run: terraform init -backend=false -upgrade
         working-directory: terraform/environments/dev
 
-      # 5️⃣ Fetch all modules (critical for multi-module repos)
+      # 5️⃣ Explicitly get modules
       - name: Terraform Get Modules
         run: terraform get -update
         working-directory: terraform/environments/dev
 
-      # 6️⃣ Validate Terraform configuration
+      # 6️⃣ Validate configuration
       - name: Terraform Validate
         run: terraform validate
         working-directory: terraform/environments/dev
