@@ -25,3 +25,14 @@ module "vpc" {
   public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
   private_subnets = ["10.0.101.0/24", "10.0.102.0/24"]
 }
+module "igw" {
+  source = "../../modules/igw"
+
+  vpc_id = module.vpc.vpc_id
+}
+module "nat" {
+  source = "../../modules/nat"
+
+  vpc_id           = module.vpc.vpc_id
+  public_subnet_id = module.vpc.public_subnet_ids[0]
+}
