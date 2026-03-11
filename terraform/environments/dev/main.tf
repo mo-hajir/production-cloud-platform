@@ -28,11 +28,27 @@ module "vpc" {
 module "igw" {
   source = "../../modules/igw"
 
-  vpc_id = module.vpc.vpc_id
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
 }
 module "nat" {
   source = "../../modules/nat"
 
   vpc_id           = module.vpc.vpc_id
   public_subnet_id = module.vpc.public_subnet_ids[0]
+}
+module "security_groups" {
+  source = "../../modules/security-groups"
+
+  vpc_id = module.vpc.vpc_id
+  my_ip  = "105.160.100.30/32"
+}
+module "ec2" {
+  source = "../../modules/ec2"
+
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_id  = module.vpc.public_subnet_ids[0]
+  private_subnet_id = module.vpc.private_subnet_ids[0]
+  bastion_sg        = module.security_groups.bastion_sg
+  app_sg            = module.security_groups.app_sg
 }

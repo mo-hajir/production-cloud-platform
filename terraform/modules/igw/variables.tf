@@ -1,4 +1,7 @@
 variable "vpc_id" {
-  description = "VPC ID to attach the Internet Gateway"
-  type        = string
+  type = string
+}
+
+variable "public_subnet_ids" {
+  type = list(string)
 }
