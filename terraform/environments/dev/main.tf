@@ -49,6 +49,21 @@ module "ec2" {
   vpc_id            = module.vpc.vpc_id
   public_subnet_id  = module.vpc.public_subnet_ids[0]
   private_subnet_id = module.vpc.private_subnet_ids[0]
-  bastion_sg        = module.security_groups.bastion_sg
-  app_sg            = module.security_groups.app_sg
+
+  bastion_sg = module.security_groups.bastion_sg_id
+  app_sg     = module.security_groups.app_sg_id
+}
+module "alb" {
+  source = "../../modules/alb"
+
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
+  alb_sg            = module.security_groups.alb_sg_id
+}
+module "asg" {
+  source = "../../modules/asg"
+
+  private_subnet_ids = module.vpc.private_subnet_ids
+  app_sg             = module.security_groups.app_sg_id
+  target_group_arn   = module.alb.target_group_arn
 }
