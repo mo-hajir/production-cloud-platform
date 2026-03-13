@@ -1,4 +1,4 @@
-name: Terraform CI
+name: Terraform CI/CD
 
 on:
   push:
@@ -8,41 +8,28 @@ on:
 
 jobs:
   terraform:
-    name: Terraform Validation
+    name: Terraform
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: terraform/environments/dev
+
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.14.6
 
-      # 3️⃣ Format Terraform (auto-fix, so CI doesn’t fail)
-      - name: Terraform Format
-        run: terraform fmt -recursive
-        working-directory: terraform/environments/dev
-
-      # 4️⃣ Initialize Terraform without backend
       - name: Terraform Init
-        run: terraform init -backend=false -upgrade
-        working-directory: terraform/environments/dev
+        run: terraform init
 
-      # 5️⃣ Get all modules
-      - name: Terraform Get Modules
-        run: terraform get -update
-        working-directory: terraform/environments/dev
+      - name: Terraform Format Check
+        run: terraform fmt -check
 
-      # 6️⃣ Validate configuration
       - name: Terraform Validate
         run: terraform validate
-        working-directory: terraform/environments/dev
 
-      # 7️⃣ Run Terraform Plan (preview changes)
       - name: Terraform Plan
-        run: terraform plan -no-color -out=tfplan
-        working-directory: terraform/environments/dev
+        run: terraform plan
