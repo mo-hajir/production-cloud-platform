@@ -46,12 +46,13 @@ module "security_groups" {
 module "ec2" {
   source = "../../modules/ec2"
 
-  vpc_id            = module.vpc.vpc_id
   public_subnet_id  = module.vpc.public_subnet_ids[0]
   private_subnet_id = module.vpc.private_subnet_ids[0]
 
   bastion_sg = module.security_groups.bastion_sg_id
   app_sg     = module.security_groups.app_sg_id
+
+  public_key = file("~/.ssh/terraform-bastion.pub")
 }
 module "alb" {
   source = "../../modules/alb"

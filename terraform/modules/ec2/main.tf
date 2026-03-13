@@ -9,10 +9,9 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-# SSH Key for Bastion Access
 resource "aws_key_pair" "bastion_key" {
   key_name   = "terraform-bastion-key"
-  public_key = file("~/.ssh/terraform-bastion.pub")
+  public_key = var.public_key
 }
 
 resource "aws_instance" "bastion" {

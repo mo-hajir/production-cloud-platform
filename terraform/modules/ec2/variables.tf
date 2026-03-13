@@ -22,3 +22,7 @@ variable "app_sg" {
   description = "Security group for app"
   type        = string
 }
+variable "public_key" {
+  description = "Public SSH key for bastion host"
+  type        = string
+}
