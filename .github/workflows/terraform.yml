@@ -8,7 +8,6 @@ on:
 
 jobs:
   terraform:
-    name: Terraform
     runs-on: ubuntu-latest
 
     defaults:
@@ -22,10 +21,17 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ca-central-1
+
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Format Check
+      - name: Terraform Format
         run: terraform fmt -check
 
       - name: Terraform Validate
