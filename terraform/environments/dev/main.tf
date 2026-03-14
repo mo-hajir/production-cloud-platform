@@ -41,7 +41,7 @@ module "security_groups" {
   source = "../../modules/security-groups"
 
   vpc_id = module.vpc.vpc_id
-  my_ip  = "105.160.100.30/32"
+  my_ip  = var.my_ip
 }
 module "ec2" {
   source = "../../modules/ec2"
@@ -54,7 +54,7 @@ module "ec2" {
   bastion_sg = module.security_groups.bastion_sg_id
   app_sg     = module.security_groups.app_sg_id
 
-  public_key = file("~/.ssh/terraform-bastion.pub")
+  public_key = var.public_key
 }
 module "alb" {
   source = "../../modules/alb"
