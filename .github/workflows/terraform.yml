@@ -38,6 +38,9 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -input=false
-        env:
-            TF_VAR_public_key: ${{ secrets.TF_PUBLIC_KEY }}
+        run: |
+          echo "Running Terraform plan..."
+          terraform plan \
+            -input=false \
+            -var="public_key=${{ secrets.TF_PUBLIC_KEY }}" \
+            -var="my_ip=${{ secrets.MY_IP }}"
