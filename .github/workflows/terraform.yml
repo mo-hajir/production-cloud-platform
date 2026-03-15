@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - staging
+      - dev
   pull_request:
 
 jobs:
@@ -12,18 +14,15 @@ jobs:
 
     defaults:
       run:
-        working-directory: terraform/environments/dev
+        working-directory: terraform/environments/${{ github.ref_name }}
 
     steps:
-      # 1️⃣ Checkout the repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # 3️⃣ Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -31,35 +30,38 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ca-central-1
 
-      # 4️⃣ Terraform Init
       - name: Terraform Init
         run: terraform init
 
-      # 5️⃣ Terraform Format check
       - name: Terraform Format
         run: terraform fmt -check
 
-      # 6️⃣ Terraform Validate
       - name: Terraform Validate
         run: terraform validate
 
-      # 7️⃣ tfsec security scan (non-blocking)
       - name: Run tfsec security scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
-          working_directory: terraform/environments/dev
+          working_directory: terraform/environments/${{ github.ref_name }}
         continue-on-error: true
 
-      # 8️⃣ Terraform Plan (output captured to plan.txt)
       - name: Terraform Plan
         id: plan
         run: |
-          terraform plan \
-            -input=false \
-            -var="public_key=${{ secrets.TF_PUBLIC_KEY }}" \
-            -var="my_ip=${{ secrets.MY_IP }}" | tee plan.txt
+          echo "Running Terraform plan for ${{ github.ref_name }}..."
+          # Select the correct secrets based on environment
+          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_DEV }}
+            MY_IP=${{ secrets.MY_IP_DEV }}
+          elif [ "${GITHUB_REF_NAME}" = "staging" ]; then
+            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_STAGING }}
+            MY_IP=${{ secrets.MY_IP_STAGING }}
+          else
+            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_PROD }}
+            MY_IP=${{ secrets.MY_IP_PROD }}
+          fi
+          terraform plan -input=false -var="public_key=$TF_PUBLIC_KEY" -var="my_ip=$MY_IP" | tee plan.txt
 
-      # 9️⃣ Comment Terraform Plan on PR
       - name: Comment Terraform Plan on PR
         if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
@@ -68,14 +70,22 @@ jobs:
           message: |
             ## Terraform Plan
             ```
-            $(cat terraform/environments/dev/plan.txt)
+            $(cat terraform/environments/${{ github.ref_name }}/plan.txt)
             ```
 
-      # 🔟 Terraform Apply (only on main branch)
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
         run: |
-          terraform apply \
-            -auto-approve \
-            -var="public_key=${{ secrets.TF_PUBLIC_KEY }}" \
-            -var="my_ip=${{ secrets.MY_IP }}"
+          echo "Applying Terraform for ${{ github.ref_name }}..."
+          # Select secrets again for apply
+          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_DEV }}
+            MY_IP=${{ secrets.MY_IP_DEV }}
+          elif [ "${GITHUB_REF_NAME}" = "staging" ]; then
+            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_STAGING }}
+            MY_IP=${{ secrets.MY_IP_STAGING }}
+          else
+            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_PROD }}
+            MY_IP=${{ secrets.MY_IP_PROD }}
+          fi
+          terraform apply -auto-approve -var="public_key=$TF_PUBLIC_KEY" -var="my_ip=$MY_IP"
