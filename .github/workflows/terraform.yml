@@ -3,9 +3,9 @@ name: Terraform CI/CD
 on:
   push:
     branches:
-      - main
-      - staging
       - dev
+      - staging
+      - main
   pull_request:
 
 jobs:
@@ -48,19 +48,24 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: |
-          echo "Running Terraform plan for ${{ github.ref_name }}..."
-          # Select the correct secrets based on environment
-          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
-            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_DEV }}
-            MY_IP=${{ secrets.MY_IP_DEV }}
-          elif [ "${GITHUB_REF_NAME}" = "staging" ]; then
-            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_STAGING }}
-            MY_IP=${{ secrets.MY_IP_STAGING }}
+          echo "Running Terraform plan for $GITHUB_REF_NAME..."
+
+          if [ "$GITHUB_REF_NAME" = "dev" ]; then
+            TF_PUBLIC_KEY="${{ secrets.TF_PUBLIC_KEY_DEV }}"
+            MY_IP="${{ secrets.MY_IP_DEV }}"
+          elif [ "$GITHUB_REF_NAME" = "staging" ]; then
+            TF_PUBLIC_KEY="${{ secrets.TF_PUBLIC_KEY_STAGING }}"
+            MY_IP="${{ secrets.MY_IP_STAGING }}"
           else
-            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_PROD }}
-            MY_IP=${{ secrets.MY_IP_PROD }}
+            TF_PUBLIC_KEY="${{ secrets.TF_PUBLIC_KEY_PROD }}"
+            MY_IP="${{ secrets.MY_IP_PROD }}"
           fi
-          terraform plan -input=false -var="public_key=$TF_PUBLIC_KEY" -var="my_ip=$MY_IP" | tee plan.txt
+
+          terraform plan \
+            -input=false \
+            -var="public_key=$TF_PUBLIC_KEY" \
+            -var="my_ip=$MY_IP" \
+            | tee plan.txt
 
       - name: Comment Terraform Plan on PR
         if: github.event_name == 'pull_request'
@@ -76,16 +81,20 @@ jobs:
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
         run: |
-          echo "Applying Terraform for ${{ github.ref_name }}..."
-          # Select secrets again for apply
-          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
-            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_DEV }}
-            MY_IP=${{ secrets.MY_IP_DEV }}
-          elif [ "${GITHUB_REF_NAME}" = "staging" ]; then
-            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_STAGING }}
-            MY_IP=${{ secrets.MY_IP_STAGING }}
+          echo "Applying Terraform for $GITHUB_REF_NAME..."
+
+          if [ "$GITHUB_REF_NAME" = "dev" ]; then
+            TF_PUBLIC_KEY="${{ secrets.TF_PUBLIC_KEY_DEV }}"
+            MY_IP="${{ secrets.MY_IP_DEV }}"
+          elif [ "$GITHUB_REF_NAME" = "staging" ]; then
+            TF_PUBLIC_KEY="${{ secrets.TF_PUBLIC_KEY_STAGING }}"
+            MY_IP="${{ secrets.MY_IP_STAGING }}"
           else
-            TF_PUBLIC_KEY=${{ secrets.TF_PUBLIC_KEY_PROD }}
-            MY_IP=${{ secrets.MY_IP_PROD }}
+            TF_PUBLIC_KEY="${{ secrets.TF_PUBLIC_KEY_PROD }}"
+            MY_IP="${{ secrets.MY_IP_PROD }}"
           fi
-          terraform apply -auto-approve -var="public_key=$TF_PUBLIC_KEY" -var="my_ip=$MY_IP"
+
+          terraform apply \
+            -auto-approve \
+            -var="public_key=$TF_PUBLIC_KEY" \
+            -var="my_ip=$MY_IP"
