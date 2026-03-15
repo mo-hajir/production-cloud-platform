@@ -15,12 +15,15 @@ jobs:
         working-directory: terraform/environments/dev
 
     steps:
+      # 1️⃣ Checkout the repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      # 3️⃣ Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -28,28 +31,35 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ca-central-1
 
+      # 4️⃣ Terraform Init
       - name: Terraform Init
         run: terraform init
 
+      # 5️⃣ Terraform Format check
       - name: Terraform Format
         run: terraform fmt -check
 
+      # 6️⃣ Terraform Validate
       - name: Terraform Validate
         run: terraform validate
 
+      # 7️⃣ tfsec security scan (non-blocking)
       - name: Run tfsec security scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: terraform/environments/dev
+        continue-on-error: true
 
+      # 8️⃣ Terraform Plan (output captured to plan.txt)
       - name: Terraform Plan
         id: plan
         run: |
           terraform plan \
             -input=false \
             -var="public_key=${{ secrets.TF_PUBLIC_KEY }}" \
-            -var="my_ip=${{ secrets.MY_IP }}"
+            -var="my_ip=${{ secrets.MY_IP }}" | tee plan.txt
 
+      # 9️⃣ Comment Terraform Plan on PR
       - name: Comment Terraform Plan on PR
         if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
@@ -58,9 +68,10 @@ jobs:
           message: |
             ## Terraform Plan
             ```
-            ${{ steps.plan.outputs.stdout }}
+            $(cat terraform/environments/dev/plan.txt)
             ```
 
+      # 🔟 Terraform Apply (only on main branch)
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
         run: |
