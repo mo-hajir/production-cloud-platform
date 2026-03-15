@@ -44,3 +44,11 @@ jobs:
             -input=false \
             -var="public_key=${{ secrets.TF_PUBLIC_KEY }}" \
             -var="my_ip=${{ secrets.MY_IP }}"
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: |
+          terraform apply \
+            -auto-approve \
+            -var="public_key=${{ secrets.TF_PUBLIC_KEY }}" \
+            -var="my_ip=${{ secrets.MY_IP }}"
