@@ -37,13 +37,29 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
+      - name: Run tfsec security scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform/environments/dev
+
       - name: Terraform Plan
+        id: plan
         run: |
-          echo "Running Terraform plan..."
           terraform plan \
             -input=false \
             -var="public_key=${{ secrets.TF_PUBLIC_KEY }}" \
             -var="my_ip=${{ secrets.MY_IP }}"
+
+      - name: Comment Terraform Plan on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: terraform-plan
+          message: |
+            ## Terraform Plan
+            ```
+            ${{ steps.plan.outputs.stdout }}
+            ```
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
