@@ -61,6 +61,9 @@ jobs:
             MY_IP="${{ secrets.MY_IP_PROD }}"
           fi
 
+          # Remove any newline characters from MY_IP
+          MY_IP=$(echo "$MY_IP" | tr -d '\n\r')
+
           terraform plan \
             -input=false \
             -var="public_key=$TF_PUBLIC_KEY" \
@@ -93,6 +96,9 @@ jobs:
             TF_PUBLIC_KEY="${{ secrets.TF_PUBLIC_KEY_PROD }}"
             MY_IP="${{ secrets.MY_IP_PROD }}"
           fi
+
+          # Remove newline characters
+          MY_IP=$(echo "$MY_IP" | tr -d '\n\r')
 
           terraform apply \
             -auto-approve \
