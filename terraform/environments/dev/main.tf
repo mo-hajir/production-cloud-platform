@@ -1,11 +1,12 @@
 terraform {
   backend "s3" {
     bucket         = "tf.state.production.cloud.platform.1"
-    key            = "production-cloud-platform/dev/terraform.tfstate"
+    key            = "production-cloud-platform/${terraform.workspace}/terraform.tfstate"
     region         = "ca-central-1"
     dynamodb_table = "terraform-locks"
     encrypt        = true
   }
+}
 
   required_providers {
     aws = {
