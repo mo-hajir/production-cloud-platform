@@ -1,0 +1,3 @@
+chmod +x destroy-all.sh
+./destroy-all.sh
+
