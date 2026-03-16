@@ -15,6 +15,7 @@ permissions:
 jobs:
   terraform:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || github.ref == 'refs/heads/staging' && 'staging' || 'dev' }}
 
     defaults:
       run:
@@ -27,11 +28,13 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Configure AWS credentials via Role
+      - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::867344436119:role/GitHubActions-Terraform-Role
           aws-region: ca-central-1
+          audience: sts.amazonaws.com
+          output-env-credentials: true
 
       - name: Terraform Init
         run: terraform init
@@ -51,8 +54,6 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: |
-          echo "Running Terraform plan for $GITHUB_REF_NAME..."
-
           if [ "$GITHUB_REF_NAME" = "dev" ]; then
             TF_PUBLIC_KEY="${{ secrets.TF_PUBLIC_KEY_DEV }}"
             MY_IP="${{ secrets.MY_IP_DEV }}"
@@ -84,10 +85,8 @@ jobs:
             ```
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/dev'
         run: |
-          echo "Applying Terraform for $GITHUB_REF_NAME..."
-
           if [ "$GITHUB_REF_NAME" = "dev" ]; then
             TF_PUBLIC_KEY="${{ secrets.TF_PUBLIC_KEY_DEV }}"
             MY_IP="${{ secrets.MY_IP_DEV }}"
