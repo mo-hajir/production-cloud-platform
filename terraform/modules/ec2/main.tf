@@ -102,3 +102,27 @@ resource "aws_cloudwatch_dashboard" "main" {
     ]
   })
 }
+resource "aws_sns_topic" "alerts" {
+  name = "infrastructure-alerts"
+}
+resource "aws_sns_topic_subscription" "email" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = "moahmedhajir36@gmail.com"
+}
+resource "aws_cloudwatch_metric_alarm" "bastion_cpu_high" {
+  alarm_name          = "bastion-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = 120
+  statistic           = "Average"
+  threshold           = 70
+
+  dimensions = {
+    InstanceId = aws_instance.bastion.id
+  }
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+}
