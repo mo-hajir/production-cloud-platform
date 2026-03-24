@@ -49,3 +49,56 @@ resource "aws_eip" "bastion_eip" {
     Name = "bastion-eip"
   }
 }
+resource "aws_cloudwatch_metric_alarm" "bastion_status_check" {
+  alarm_name          = "bastion-status-check-failed"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "StatusCheckFailed"
+  namespace           = "AWS/EC2"
+  period              = 60
+  statistic           = "Maximum"
+  threshold           = 0
+
+  dimensions = {
+    InstanceId = aws_instance.bastion.id
+  }
+}
+resource "aws_cloudwatch_metric_alarm" "bastion_network_in" {
+  alarm_name          = "bastion-network-in-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "NetworkIn"
+  namespace           = "AWS/EC2"
+  period              = 120
+  statistic           = "Average"
+  threshold           = 10000000
+
+  dimensions = {
+    InstanceId = aws_instance.bastion.id
+  }
+}
+resource "aws_cloudwatch_dashboard" "main" {
+  dashboard_name = "infrastructure-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type = "metric",
+        x    = 0,
+        y    = 0,
+        width  = 12,
+        height = 6,
+
+        properties = {
+          metrics = [
+            ["AWS/EC2", "CPUUtilization", "InstanceId", aws_instance.bastion.id]
+          ],
+          period = 300,
+          stat   = "Average",
+          region = "ca-central-1",
+          title  = "EC2 CPU Usage"
+        }
+      }
+    ]
+  })
+}
