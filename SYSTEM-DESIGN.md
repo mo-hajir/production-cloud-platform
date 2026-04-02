@@ -1,0 +1,5 @@
+	-	ALB + ASG for scalability and fault tolerance
+	-	Private subnets for application security
+	-	Bastion host instead of exposing instances publicly
+	-	OIDC authentication instead of static AWS credentials
+	-	Terraform modules for reusability and maintainability

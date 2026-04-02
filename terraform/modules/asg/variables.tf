@@ -9,6 +9,6 @@ variable "app_sg" {
 }
 
 variable "target_group_arn" {
-  description = "Target group ARN"
+  description = "Target group ARN from ALB"
   type        = string
 }

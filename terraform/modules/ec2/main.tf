@@ -1,7 +1,6 @@
 data "aws_ami" "amazon_linux" {
   most_recent = true
-
-  owners = ["amazon"]
+  owners      = ["amazon"]
 
   filter {
     name   = "name"
@@ -44,12 +43,38 @@ resource "aws_instance" "bastion" {
   instance_type          = "t2.micro"
   subnet_id              = var.public_subnet_id
   vpc_security_group_ids = [var.bastion_sg]
-
-  key_name = aws_key_pair.bastion_key.key_name
-
+  key_name               = aws_key_pair.bastion_key.key_name
   associate_public_ip_address = true
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
-  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+  user_data = <<-EOF
+#!/bin/bash
+yum update -y
+yum install -y amazon-cloudwatch-agent
+
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOL
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/messages",
+            "log_group_name": "/app/logs",
+            "log_stream_name": "{instance_id}"
+          }
+        ]
+      }
+    }
+  }
+}
+EOL
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+  -s
+EOF
 
   tags = {
     Name = "bastion-host"
@@ -61,8 +86,8 @@ resource "aws_instance" "app" {
   instance_type          = "t2.micro"
   subnet_id              = var.private_subnet_id
   vpc_security_group_ids = [var.app_sg]
+  key_name               = aws_key_pair.bastion_key.key_name
 
-  key_name = aws_key_pair.bastion_key.key_name
 
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
@@ -80,7 +105,18 @@ resource "aws_eip" "bastion_eip" {
   }
 }
 
-resource "aws_cloudwatch_metric_alarm" "bastion_cpu_high" {
+resource "aws_sns_topic" "alerts" {
+  name = "infrastructure-alerts"
+}
+
+resource "aws_sns_topic_subscription" "email" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = "your-email@example.com"
+}
+
+resource "aws_cloudwatch_metric_alarm" "cpu_high" {
+
   alarm_name          = "bastion-cpu-high"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
@@ -93,9 +129,31 @@ resource "aws_cloudwatch_metric_alarm" "bastion_cpu_high" {
   dimensions = {
     InstanceId = aws_instance.bastion.id
   }
+
 }
 
 resource "aws_cloudwatch_log_group" "app_logs" {
   name              = "/app/logs"
   retention_in_days = 7
+
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "status_check" {
+  alarm_name          = "bastion-status-check-failed"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "StatusCheckFailed"
+  namespace           = "AWS/EC2"
+  period              = 60
+  statistic           = "Maximum"
+  threshold           = 0
+
+  dimensions = {
+    InstanceId = aws_instance.bastion.id
+  }
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+
 }
